@@ -3,15 +3,17 @@ DEFAULT_PATH="."
 DEFAULT_BASE_BRANCH="origin/master"
 DEFAULT_JAVA_HOME=$JAVA_HOME
 
+## Create a configuration file if it doesn't exist
 file="$HOME/.script.config"
-# Check if the file exists
 if [ ! -e "$file" ]; then
 
     touch "$file" 
     declare -p DEFAULT_PATH DEFAULT_BASE_BRANCH DEFAULT_JAVA_HOME > "$HOME/.script.config"
 fi
 
+## Read config file vars
 source $file
+
 ## Handle set parameter
 if [ $1 == "--set" ]; then
     eval "$2='$3'"
@@ -21,7 +23,7 @@ if [ $1 == "--set" ]; then
     exit 0
 fi
 
-## Preparing params
+## Preparing parameters
 ESSENTIAL_PARAMS=()
 UNORDERED_PARAMS=()
 for var in "$@"
@@ -33,7 +35,7 @@ do
     fi
 done
 
-## Handle help param
+## Handle help parameter
 for param in "${UNORDERED_PARAMS[@]}"
 do
     if [ "$param" == "--help" ]; then
@@ -89,10 +91,9 @@ do
     fi
 done
 
-
+## Handle path to run
 ROOT_PROJECT_PATH=`git rev-parse --show-toplevel`
 ROOT_PROJECT_PATH="$ROOT_PROJECT_PATH/"
-
 PACKAGE=$(echo "$ROOT_PROJECT_PATH$PATH_PARAM" | sed 's#\/\/#\/#g; s#\.\/##')
 
 echo "Checking project modules"
@@ -104,7 +105,6 @@ for FILE in $BUILD_GRADLE_FILES; do
     FILE=$(echo "$FILE" | sed 's#\/\/#\/#g; s#\.\/##')
     MODULE_FULL_DIR=$(dirname "$FILE")
     MODULE_DIR="/${MODULE_FULL_DIR#"$ROOT_PROJECT_PATH"}"
-    # MODULE_NAME=$(grep -o 'namespace = "[^"]*' $FILE | awk -F'"' '{print $0}')
     MODULE=$(echo "$MODULE_DIR" | tr '/' ':')
 
     if git diff $DEFAULT_BASE_BRANCH --quiet --exit-code -- "$MODULE_DIR"; then
