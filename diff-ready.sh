@@ -97,9 +97,6 @@ for FILE in $BUILD_GRADLE_FILES; do
     FILE=$(echo "$FILE" | sed 's#\/\/#\/#g; s#\.\/##')
     MODULE_FULL_DIR=$(dirname "$FILE")
     MODULE_DIR="/${MODULE_FULL_DIR#"$ROOT_PROJECT_PATH"}"
-    #MODULE_NAME=$(grep -o 'namespace = "[^"]*' $FILE | awk -F'"' '{print $0}')
-    #MODULE=$(echo "$FILE" | sed 's|.||')
-    #MODULE=$(echo "$RELATIVE_PATH" | sed 's|/build.gradle.kts$||')
     MODULE=$(echo "$MODULE_DIR" | tr '/' ':')
 
     if git diff $DEFAULT_BASE_BRANCH --quiet --exit-code -- "$MODULE_FULL_DIR"; then
