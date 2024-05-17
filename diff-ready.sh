@@ -3,15 +3,17 @@ DEFAULT_PATH="."
 DEFAULT_BASE_BRANCH="origin/master"
 DEFAULT_JAVA_HOME=$JAVA_HOME
 
+## Create config file if no exists
 file="$HOME/.script.config"
-# Check if the file exists
 if [ ! -e "$file" ]; then
 
     touch "$file" 
     declare -p DEFAULT_PATH DEFAULT_BASE_BRANCH DEFAULT_JAVA_HOME > "$HOME/.script.config"
 fi
 
+## Read config file vars
 source $file
+
 ## Handle set parameter
 if [ "$1" == "--set" ]; then
     eval "$2='$3'"
