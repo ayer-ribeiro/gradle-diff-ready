@@ -23,8 +23,8 @@ setup:
         DEFAULT_JAVA_HOME:         default java home path
 
     examples:
-        diff.sh --set DEFAULT_PATH api/movies
-        diff.sh --set DEFAULT_BASE_BRANCH origin/main
+        diff-ready.sh --set DEFAULT_PATH api/movies
+        diff-ready.sh --set DEFAULT_BASE_BRANCH origin/main
 
 ## diff.sh
 
