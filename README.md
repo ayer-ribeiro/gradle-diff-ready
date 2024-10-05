@@ -1,5 +1,7 @@
 ## diff-ready.sh
 
+Run lintKotlin, detekt and testDebugUnitTest on all modules that contain diff comparing to the base branch
+
 usage:
     diff-ready.sh [modules path to run] [--hide-skipped] [--help]
 
@@ -27,6 +29,8 @@ setup:
         diff-ready.sh --set DEFAULT_BASE_BRANCH origin/main
 
 ## diff.sh
+
+Run gradle task on all modules that contain diff comparing to the base branch
 
 usage:
     diff.sh [gradle task to run] [modules path to run] [--hide-skipped] [--help]
