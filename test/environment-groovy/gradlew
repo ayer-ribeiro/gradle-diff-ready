@@ -1,0 +1,2 @@
+#!/usr/bin/env sh
+echo -e "\033[1;92mBUILD SUCCESSFUL\033[m"

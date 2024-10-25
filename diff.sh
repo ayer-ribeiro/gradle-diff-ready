@@ -3,16 +3,12 @@ DEFAULT_PATH="."
 DEFAULT_BASE_BRANCH="origin/master"
 DEFAULT_JAVA_HOME=$JAVA_HOME
 
-## Create a configuration file if it doesn't exist
-file="$HOME/.script.config"
-if [ ! -e "$file" ]; then
+source ./diff-functions.sh
+source ./common-functions.sh
 
-    touch "$file" 
-    declare -p DEFAULT_PATH DEFAULT_BASE_BRANCH DEFAULT_JAVA_HOME > "$HOME/.script.config"
-fi
-
-## Read config file vars
-source $file
+scriptConfigFile="$HOME/.script.config"
+grantThatFileExists $scriptConfigFile
+source $scriptConfigFile
 
 ## Handle set parameter
 if [ $1 == "--set" ]; then
@@ -24,66 +20,41 @@ if [ $1 == "--set" ]; then
 fi
 
 ## Preparing parameters
-ESSENTIAL_PARAMS=()
-UNORDERED_PARAMS=()
+mandatoryParams=()
+optionalParams=()
 for var in "$@"
 do
     if [[ $var == --* ]]; then
-        UNORDERED_PARAMS+=("$var")
+        optionalParams+=("$var")
     else 
-        ESSENTIAL_PARAMS+=("$var")
+        mandatoryParams+=("$var")
     fi
 done
 
 ## Handle help parameter
-for param in "${UNORDERED_PARAMS[@]}"
+for param in "${optionalParams[@]}"
 do
     if [ "$param" == "--help" ]; then
-        echo "usage:"
-        echo "    diff.sh [gradle task to run] [modules path to run] [--hide-skipped] [--help]"
-        echo ""
-        echo "    examples:"
-        echo "        diff.sh testDebugUnitTest api/movies"
-        echo "        diff.sh lintDebug --hide-skipped"
-        echo "        diff.sh connectedAndroidTest api/movies --hide-skipped"
-        echo ""
-        echo "    parameters:"
-        echo "        [modules path to run]:    run all modules found in the path and subpaths of \"modules path to run\""
-        echo "        [gradle task to run]:     task that will be run on each module that contains diff comparing to base branch"
-        echo "        [--hide-skipped]:         hide logs of skipped modules"
-        echo "        [--help]:                 you already know what this parameter does"
-        echo ""
-        echo "setup:"
-        echo "    diff.sh --set [CONFIG] [VALUE]"
-        echo ""
-        echo "    CONFIG Value:"
-        echo "        DEFAULT_PATH:              default modules path to run"
-        echo "        DEFAULT_BASE_BRANCH:       default base branch to compare"
-        echo "        DEFAULT_JAVA_HOME:         default java home path"
-        echo ""
-        echo "    examples:"
-        echo "        diff.sh --set DEFAULT_PATH api/movies"
-        echo "        diff.sh --set DEFAULT_BASE_BRANCH origin/main"
-        exit 0
+        showHelp
     fi
 done
 
 ## Handle task parameter
-TASK="${ESSENTIAL_PARAMS[0]}"
-if [ -z "$TASK" ]; then
-    echo -e "\033[1;91mINVALID TASK PARAMETER\033[m"
+task="${mandatoryParams[0]}"
+if [ -z "$task" ]; then
+    msgError "INVALID TASK PARAMETER"
     exit 1
 fi
  
 ## Handle path param
-PATH_PARAM="${ESSENTIAL_PARAMS[1]}"
-if [ -z "$PATH_PARAM" ]; then
-    PATH_PARAM=$DEFAULT_PATH
+pathParam="${mandatoryParams[1]}"
+if [ -z "$pathParam" ]; then
+    pathParam=$DEFAULT_PATH
 fi
 
 ## Handle hide skipped parameter
 hide_skipped=false
-for param in "${UNORDERED_PARAMS[@]}"
+for param in "${optionalParams[@]}"
 do
     if [ "$param" == "--hide-skipped" ]; then
         hide_skipped=true
@@ -92,38 +63,40 @@ do
 done
 
 ## Handle path to run
-ROOT_PROJECT_PATH=`git rev-parse --show-toplevel`
-ROOT_PROJECT_PATH="$ROOT_PROJECT_PATH/"
-PACKAGE=$(echo "$ROOT_PROJECT_PATH$PATH_PARAM" | sed 's#\/\/#\/#g; s#\.\/##')
+rootProjectPath=`git rev-parse --show-toplevel`
+rootProjectPath="$rootProjectPath/"
+PACKAGE=$(echo "$rootProjectPath$pathParam" | sed 's#\/\/#\/#g; s#\.\/##')
 
 echo "Checking project modules"
 echo "..."
-BUILD_GRADLE_FILES=$(find $PACKAGE -mindepth 2 -type f \( -name "build.gradle" -o -name "build.gradle.kts" \))
+buildGradleFiles=$(find $PACKAGE -mindepth 2 -type f \( -name "build.gradle" -o -name "build.gradle.kts" \))
 
 MODULE_NAMES=()
-for FILE in $BUILD_GRADLE_FILES; do
-    FILE=$(echo "$FILE" | sed 's#\/\/#\/#g; s#\.\/##')
-    MODULE_FULL_DIR=$(dirname "$FILE")
-    MODULE_DIR="/${MODULE_FULL_DIR#"$ROOT_PROJECT_PATH"}"
-    MODULE=$(echo "$MODULE_DIR" | tr '/' ':')
+for buildGradleFile in $buildGradleFiles; do
+    buildGradleFile=$(echo "$buildGradleFile" | sed 's#\/\/#\/#g; s#\.\/##')
+    moduleFullPath=$(dirname "$buildGradleFile")
+    moduleDir="/${moduleFullPath#"$rootProjectPath"}"
+    module=$(echo "$moduleDir" | tr '/' ':')
 
-    if git diff $DEFAULT_BASE_BRANCH --quiet --exit-code -- "$MODULE_FULL_DIR"; then
+    if git diff $DEFAULT_BASE_BRANCH --quiet --exit-code -- "$moduleFullPath"; then
         if [ "$hide_skipped" = false ]; then
             echo ""
-            echo "Checking $MODULE at $MODULE_DIR"
-            echo -e "\033[1;93mNO CHANGES FOUND\033[m"
+            echo "Checking $module at $moduleDir"
+            msgAlert "NO CHANGES FOUND"
         fi
         continue
     else 
         echo ""
-        echo "Checking $MODULE at $MODULE_DIR"
+        echo "Checking $module at $moduleDir"
     fi  
 
-    echo "$MODULE:$TASK"
-    ./gradlew "$MODULE:$TASK" "-Dorg.gradle.java.home=$DEFAULT_JAVA_HOME" --quiet --warning-mode none
+    echo "$module:$task"
+    ./gradlew "$module:$task" "-Dorg.gradle.java.home=$DEFAULT_JAVA_HOME" --quiet --warning-mode none
     
     if [ $? -eq 0 ]
     then
-        echo -e "\033[1;92mBUILD SUCCESSFUL\033[m"
+        msgError "BUILD SUCCESSFUL"
     fi
 done
+
+
