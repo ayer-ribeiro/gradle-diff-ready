@@ -98,7 +98,7 @@ PACKAGE=$(echo "$ROOT_PROJECT_PATH$PATH_PARAM" | sed 's#\/\/#\/#g; s#\.\/##')
 
 echo "Checking project modules"
 echo "..."
-BUILD_GRADLE_FILES=$(find $PACKAGE -type f -name "build.gradle.kts")
+BUILD_GRADLE_FILES=$(find $PACKAGE -mindepth 2 -type f \( -name "build.gradle" -o -name "build.gradle.kts" \))
 
 MODULE_NAMES=()
 for FILE in $BUILD_GRADLE_FILES; do
@@ -107,7 +107,7 @@ for FILE in $BUILD_GRADLE_FILES; do
     MODULE_DIR="/${MODULE_FULL_DIR#"$ROOT_PROJECT_PATH"}"
     MODULE=$(echo "$MODULE_DIR" | tr '/' ':')
 
-    if git diff $DEFAULT_BASE_BRANCH --quiet --exit-code -- "$MODULE_DIR"; then
+    if git diff $DEFAULT_BASE_BRANCH --quiet --exit-code -- "$MODULE_FULL_DIR"; then
         if [ "$hide_skipped" = false ]; then
             echo ""
             echo "Checking $MODULE at $MODULE_DIR"
